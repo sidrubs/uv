@@ -5739,6 +5739,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uv-hooks"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror 2.0.12",
+ "uv-installer",
+]
+
+[[package]]
 name = "uv-install-wheel"
 version = "0.0.1"
 dependencies = [
