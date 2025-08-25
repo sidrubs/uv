@@ -23,6 +23,7 @@ use uv_distribution_types::{
 };
 use uv_fs::{CWD, LockedFile, Simplified};
 use uv_git::ResolvedRepositoryReference;
+use uv_hooks::HookProvider;
 use uv_installer::{SatisfiesResult, SitePackages};
 use uv_normalize::{DEV_DEPENDENCIES, DefaultGroups, ExtraName, GroupName, PackageName};
 use uv_pep440::{TildeVersionSpecifier, Version, VersionSpecifiers};
@@ -2041,7 +2042,7 @@ pub(crate) async fn resolve_environment(
 }
 
 /// Sync a [`PythonEnvironment`] with a set of resolved requirements.
-pub(crate) async fn sync_environment(
+pub(crate) async fn sync_environment<HP>(
     venv: PythonEnvironment,
     resolution: &Resolution,
     modifications: Modifications,
@@ -2055,7 +2056,11 @@ pub(crate) async fn sync_environment(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<PythonEnvironment, ProjectError> {
+    hook_provider: HP,
+) -> Result<PythonEnvironment, ProjectError>
+where
+    HP: HookProvider,
+{
     let InstallerSettingsRef {
         index_locations,
         index_strategy,
@@ -2176,6 +2181,7 @@ pub(crate) async fn sync_environment(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await?;
 
@@ -2202,7 +2208,7 @@ impl EnvironmentUpdate {
 }
 
 /// Update a [`PythonEnvironment`] to satisfy a set of [`RequirementsSource`]s.
-pub(crate) async fn update_environment(
+pub(crate) async fn update_environment<HP>(
     venv: PythonEnvironment,
     spec: RequirementsSpecification,
     modifications: Modifications,
@@ -2220,7 +2226,11 @@ pub(crate) async fn update_environment(
     dry_run: DryRun,
     printer: Printer,
     preview: Preview,
-) -> Result<EnvironmentUpdate, ProjectError> {
+    hook_provider: HP,
+) -> Result<EnvironmentUpdate, ProjectError>
+where
+    HP: HookProvider,
+{
     warn_on_requirements_txt_setting(&spec, &settings.resolver);
 
     let ResolverInstallerSettings {
@@ -2446,6 +2456,7 @@ pub(crate) async fn update_environment(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await?;
 

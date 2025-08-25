@@ -25,6 +25,7 @@ use uv_distribution_types::{
     UnresolvedRequirement, UnresolvedRequirementSpecification,
 };
 use uv_fs::Simplified;
+use uv_hooks::HookProvider;
 use uv_installer::{SatisfiesResult, SitePackages};
 use uv_normalize::PackageName;
 use uv_pep440::{VersionSpecifier, VersionSpecifiers};
@@ -79,7 +80,7 @@ impl Display for ToolRunCommand {
 
 /// Run a command.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn run(
+pub(crate) async fn run<HP>(
     command: Option<ExternalCommand>,
     from: Option<String>,
     with: &[RequirementsSource],
@@ -103,7 +104,11 @@ pub(crate) async fn run(
     env_file: Vec<PathBuf>,
     no_env_file: bool,
     preview: Preview,
-) -> anyhow::Result<ExitStatus> {
+    hook_provider: HP,
+) -> anyhow::Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     /// Whether or not a path looks like a Python script based on the file extension.
     fn has_python_script_ext(path: &Path) -> bool {
         path.extension()
@@ -278,6 +283,7 @@ pub(crate) async fn run(
         &cache,
         printer,
         preview,
+        hook_provider,
     ))
     .await;
 
@@ -668,7 +674,7 @@ impl std::fmt::Display for ToolRequirement {
 /// If the target tool is already installed in a compatible environment, returns that
 /// [`PythonEnvironment`]. Otherwise, gets or creates a [`CachedEnvironment`].
 #[allow(clippy::fn_params_excessive_bools)]
-async fn get_or_create_environment(
+async fn get_or_create_environment<HP>(
     request: &ToolRequest<'_>,
     with: &[RequirementsSource],
     constraints: &[RequirementsSource],
@@ -688,7 +694,11 @@ async fn get_or_create_environment(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<(ToolRequirement, PythonEnvironment), ProjectError> {
+    hook_provider: HP,
+) -> Result<(ToolRequirement, PythonEnvironment), ProjectError>
+where
+    HP: HookProvider,
+{
     let client_builder = BaseClientBuilder::new()
         .retries_from_env()?
         .connectivity(network_settings.connectivity)
@@ -1037,6 +1047,7 @@ async fn get_or_create_environment(
         cache,
         printer,
         preview,
+        hook_provider.clone(),
     )
     .await;
 
@@ -1096,6 +1107,7 @@ async fn get_or_create_environment(
                     cache,
                     printer,
                     preview,
+                    hook_provider,
                 )
                 .await?
             }

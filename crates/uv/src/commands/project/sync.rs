@@ -22,6 +22,7 @@ use uv_distribution_types::{
     DirectorySourceDist, Dist, Index, Requirement, Resolution, ResolvedDist, SourceDist,
 };
 use uv_fs::{PortablePathBuf, Simplified};
+use uv_hooks::HookProvider;
 use uv_installer::SitePackages;
 use uv_normalize::{DefaultExtras, DefaultGroups, PackageName};
 use uv_pep508::{MarkerTree, VersionOrUrl};
@@ -55,7 +56,7 @@ use crate::settings::{
 
 /// Sync the project environment.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn sync(
+pub(crate) async fn sync<HP>(
     project_dir: &Path,
     locked: bool,
     frozen: bool,
@@ -83,7 +84,11 @@ pub(crate) async fn sync(
     printer: Printer,
     preview: Preview,
     output_format: SyncFormat,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     if preview.is_enabled(PreviewFeatures::JSON_OUTPUT) && matches!(output_format, SyncFormat::Json)
     {
         warn_user!(
@@ -266,6 +271,7 @@ pub(crate) async fn sync(
                 dry_run,
                 printer,
                 preview,
+                hook_provider.clone(),
             )
             .await
             {
@@ -401,6 +407,7 @@ pub(crate) async fn sync(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await
     {
@@ -554,7 +561,7 @@ impl Deref for SyncEnvironment {
 
 /// Sync a lockfile with an environment.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(super) async fn do_sync(
+pub(super) async fn do_sync<HP>(
     target: InstallTarget<'_>,
     venv: &PythonEnvironment,
     extras: &ExtrasSpecificationWithDefaults,
@@ -574,7 +581,11 @@ pub(super) async fn do_sync(
     dry_run: DryRun,
     printer: Printer,
     preview: Preview,
-) -> Result<(), ProjectError> {
+    hook_provider: HP,
+) -> Result<(), ProjectError>
+where
+    HP: HookProvider,
+{
     // Extract the project settings.
     let InstallerSettingsRef {
         index_locations,
@@ -808,6 +819,7 @@ pub(super) async fn do_sync(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await?;
 

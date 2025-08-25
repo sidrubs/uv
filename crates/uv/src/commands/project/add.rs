@@ -30,6 +30,7 @@ use uv_distribution_types::{
 use uv_fs::{LockedFile, Simplified};
 use uv_git::GIT_STORE;
 use uv_git_types::GitReference;
+use uv_hooks::HookProvider;
 use uv_normalize::{DEV_DEPENDENCIES, DefaultExtras, DefaultGroups, ExtraName, PackageName};
 use uv_pep508::{MarkerTree, UnnamedRequirement, VersionOrUrl};
 use uv_pypi_types::{ParsedUrl, VerbatimParsedUrl};
@@ -63,7 +64,7 @@ use crate::settings::{NetworkSettings, ResolverInstallerSettings};
 
 /// Add one or more packages to the project requirements.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn add(
+pub(crate) async fn add<HP>(
     project_dir: &Path,
     locked: bool,
     frozen: bool,
@@ -99,7 +100,11 @@ pub(crate) async fn add(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     if bounds.is_some() && !preview.is_enabled(PreviewFeatures::ADD_BOUNDS) {
         warn_user_once!(
             "The `bounds` option is in preview and may change in any future release. Pass `--preview-features {}` to disable this warning.",
@@ -752,6 +757,7 @@ pub(crate) async fn add(
         cache,
         printer,
         preview,
+        hook_provider,
     ))
     .await
     {
@@ -961,7 +967,7 @@ fn edits(
 
 /// Re-lock and re-sync the project after a series of edits.
 #[allow(clippy::fn_params_excessive_bools)]
-async fn lock_and_sync(
+async fn lock_and_sync<HP>(
     mut target: AddTarget,
     toml: &mut PyProjectTomlMut,
     edits: &[DependencyEdit],
@@ -983,7 +989,11 @@ async fn lock_and_sync(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<(), ProjectError> {
+    hook_provider: HP,
+) -> Result<(), ProjectError>
+where
+    HP: HookProvider,
+{
     let mut lock = project::lock::LockOperation::new(
         if locked {
             LockMode::Locked(target.interpreter())
@@ -1176,6 +1186,7 @@ async fn lock_and_sync(
         DryRun::Disabled,
         printer,
         preview,
+        hook_provider,
     )
     .await?;
 

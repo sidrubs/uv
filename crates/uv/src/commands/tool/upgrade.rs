@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::str::FromStr;
 use tracing::{debug, trace};
+use uv_hooks::HookProvider;
 
 use uv_cache::Cache;
 use uv_client::BaseClientBuilder;
@@ -36,7 +37,7 @@ use crate::printer::Printer;
 use crate::settings::{NetworkSettings, ResolverInstallerSettings};
 
 /// Upgrade a tool.
-pub(crate) async fn upgrade(
+pub(crate) async fn upgrade<HP>(
     names: Vec<String>,
     python: Option<String>,
     install_mirrors: PythonInstallMirrors,
@@ -50,7 +51,11 @@ pub(crate) async fn upgrade(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     let installed_tools = InstalledTools::from_settings()?.init()?;
     let _lock = installed_tools.lock().await?;
 
@@ -133,6 +138,7 @@ pub(crate) async fn upgrade(
             installer_metadata,
             concurrency,
             preview,
+            hook_provider.clone(),
         )
         .await;
 
@@ -205,7 +211,7 @@ enum UpgradeOutcome {
 }
 
 /// Upgrade a specific tool.
-async fn upgrade_tool(
+async fn upgrade_tool<HP>(
     name: &PackageName,
     constraints: &[Requirement],
     interpreter: Option<&Interpreter>,
@@ -218,7 +224,11 @@ async fn upgrade_tool(
     installer_metadata: bool,
     concurrency: Concurrency,
     preview: Preview,
-) -> Result<UpgradeOutcome> {
+    hook_provider: HP,
+) -> Result<UpgradeOutcome>
+where
+    HP: HookProvider,
+{
     // Ensure the tool is installed.
     let existing_tool_receipt = match installed_tools.get_tool_receipt(name) {
         Ok(Some(receipt)) => receipt,
@@ -323,6 +333,7 @@ async fn upgrade_tool(
             cache,
             printer,
             preview,
+            hook_provider,
         )
         .await?;
 
@@ -352,6 +363,7 @@ async fn upgrade_tool(
             DryRun::Disabled,
             printer,
             preview,
+            hook_provider,
         )
         .await?;
 

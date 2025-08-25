@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use thiserror::Error;
 use uv_installer::Plan;
 
@@ -7,11 +6,10 @@ use uv_installer::Plan;
 /// A hook provider can implement this trait to "hook" into the operation of
 /// `uv` at various stages. An appropriate error can be returned to halt `uv`
 /// operation after the hook.
-#[async_trait]
-pub trait HookProvider {
+pub trait HookProvider: Send + Sync + Clone + 'static {
     /// Indicate that the `plan` is about to be executed.
-    async fn on_execute_plan(&self, _plan: &Plan) -> Result<(), String> {
-        Ok(())
+    fn on_execute_plan(&self, _plan: &Plan) -> impl Future<Output = Result<(), HookError>> + Send {
+        async { Ok(()) }
     }
 }
 

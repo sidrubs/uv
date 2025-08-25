@@ -13,6 +13,7 @@ use uv_distribution_types::{
     ExtraBuildRequires, NameRequirementSpecification, Requirement, RequirementSource,
     UnresolvedRequirementSpecification,
 };
+use uv_hooks::HookProvider;
 use uv_normalize::PackageName;
 use uv_pep440::{VersionSpecifier, VersionSpecifiers};
 use uv_pep508::MarkerTree;
@@ -42,7 +43,7 @@ use crate::settings::{NetworkSettings, ResolverInstallerSettings, ResolverSettin
 
 /// Install a tool.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn install(
+pub(crate) async fn install<HP>(
     package: String,
     editable: bool,
     from: Option<String>,
@@ -64,7 +65,11 @@ pub(crate) async fn install(
     cache: Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     let client_builder = BaseClientBuilder::new()
         .retries_from_env()?
         .connectivity(network_settings.connectivity)
@@ -452,6 +457,7 @@ pub(crate) async fn install(
             DryRun::Disabled,
             printer,
             preview,
+            hook_provider.clone(),
         )
         .await
         {
@@ -583,6 +589,7 @@ pub(crate) async fn install(
             &cache,
             printer,
             preview,
+            hook_provider,
         )
         .await
         .inspect_err(|_| {

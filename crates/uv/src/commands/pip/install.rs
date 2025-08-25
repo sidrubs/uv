@@ -21,6 +21,7 @@ use uv_distribution_types::{
     UnresolvedRequirementSpecification,
 };
 use uv_fs::Simplified;
+use uv_hooks::HookProvider;
 use uv_install_wheel::LinkMode;
 use uv_installer::{SatisfiesResult, SitePackages};
 use uv_normalize::{DefaultExtras, DefaultGroups};
@@ -50,7 +51,7 @@ use crate::settings::NetworkSettings;
 
 /// Install packages into the current environment.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn pip_install(
+pub(crate) async fn pip_install<HP>(
     requirements: &[RequirementsSource],
     constraints: &[RequirementsSource],
     overrides: &[RequirementsSource],
@@ -98,7 +99,11 @@ pub(crate) async fn pip_install(
     dry_run: DryRun,
     printer: Printer,
     preview: Preview,
-) -> anyhow::Result<ExitStatus> {
+    hook_provider: HP,
+) -> anyhow::Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     let start = std::time::Instant::now();
 
     if !preview.is_enabled(PreviewFeatures::EXTRA_BUILD_DEPENDENCIES)
@@ -619,6 +624,7 @@ pub(crate) async fn pip_install(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await
     {

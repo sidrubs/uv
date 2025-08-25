@@ -5061,6 +5061,7 @@ dependencies = [
  "uv-fs",
  "uv-git",
  "uv-git-types",
+ "uv-hooks",
  "uv-install-wheel",
  "uv-installer",
  "uv-normalize",
@@ -5742,7 +5743,6 @@ dependencies = [
 name = "uv-hooks"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "thiserror 2.0.12",
  "uv-installer",
 ]

@@ -24,6 +24,7 @@ use uv_distribution_types::{
 };
 use uv_distribution_types::{DistributionMetadata, InstalledMetadata, Name, Resolution};
 use uv_fs::Simplified;
+use uv_hooks::{HookError, HookProvider};
 use uv_install_wheel::LinkMode;
 use uv_installer::{Plan, Planner, Preparer, SitePackages};
 use uv_normalize::PackageName;
@@ -429,7 +430,7 @@ impl Changelog {
 /// Install a set of requirements into the current environment.
 ///
 /// Returns a [`Changelog`] summarizing the changes made to the environment.
-pub(crate) async fn install(
+pub(crate) async fn install<HP>(
     resolution: &Resolution,
     site_packages: SitePackages,
     modifications: Modifications,
@@ -450,7 +451,11 @@ pub(crate) async fn install(
     dry_run: DryRun,
     printer: Printer,
     preview: uv_configuration::Preview,
-) -> Result<Changelog, Error> {
+    hook_provider: HP,
+) -> Result<Changelog, Error>
+where
+    HP: HookProvider,
+{
     let start = std::time::Instant::now();
 
     // Partition into those that should be linked from the cache (`local`), those that need to be
@@ -476,6 +481,14 @@ pub(crate) async fn install(
         report_dry_run(dry_run, resolution, plan, modifications, start, printer)?;
         return Ok(Changelog::default());
     }
+
+    // Run hook before executing the plan.
+    hook_provider
+        .on_execute_plan(&plan)
+        .await
+        .map_err(|e| match e {
+            HookError::ActionDenied => anyhow!("the installation plan has been denied"),
+        })?;
 
     let Plan {
         cached,

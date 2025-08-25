@@ -14,6 +14,7 @@ use uv_configuration::{
     ExtrasSpecification, InstallOptions, Preview,
 };
 use uv_fs::Simplified;
+use uv_hooks::HookProvider;
 use uv_normalize::DefaultExtras;
 use uv_normalize::PackageName;
 use uv_pep440::{BumpCommand, PrereleaseKind, Version};
@@ -52,7 +53,7 @@ pub(crate) fn self_version(
 
 /// Read or update project version (`uv version`)
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn project_version(
+pub(crate) async fn project_version<HP>(
     value: Option<String>,
     mut bump: Vec<VersionBump>,
     short: bool,
@@ -77,7 +78,11 @@ pub(crate) async fn project_version(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     // Read the metadata
     let project = find_target(project_dir, package.as_ref(), explicit_project).await?;
 
@@ -311,6 +316,7 @@ pub(crate) async fn project_version(
             cache,
             printer,
             preview,
+            hook_provider,
         ))
         .await?
     } else {
@@ -491,7 +497,7 @@ async fn print_frozen_version(
 
 /// Re-lock and re-sync the project after a series of edits.
 #[allow(clippy::fn_params_excessive_bools)]
-async fn lock_and_sync(
+async fn lock_and_sync<HP>(
     project: VirtualProject,
     project_dir: &Path,
     locked: bool,
@@ -510,7 +516,11 @@ async fn lock_and_sync(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     // If frozen, don't touch the lock or sync at all
     if frozen {
         return Ok(ExitStatus::Success);
@@ -653,6 +663,7 @@ async fn lock_and_sync(
         DryRun::Disabled,
         printer,
         preview,
+        hook_provider,
     )
     .await
     {

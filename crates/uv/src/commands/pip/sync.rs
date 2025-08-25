@@ -19,6 +19,7 @@ use uv_distribution_types::{
     PackageConfigSettings, Resolution,
 };
 use uv_fs::Simplified;
+use uv_hooks::HookProvider;
 use uv_install_wheel::LinkMode;
 use uv_installer::SitePackages;
 use uv_normalize::{DefaultExtras, DefaultGroups};
@@ -48,7 +49,7 @@ use crate::settings::NetworkSettings;
 
 /// Install a set of locked requirements into the current Python environment.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn pip_sync(
+pub(crate) async fn pip_sync<HP>(
     requirements: &[RequirementsSource],
     constraints: &[RequirementsSource],
     build_constraints: &[RequirementsSource],
@@ -88,7 +89,11 @@ pub(crate) async fn pip_sync(
     dry_run: DryRun,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     if !preview.is_enabled(PreviewFeatures::EXTRA_BUILD_DEPENDENCIES)
         && !extra_build_dependencies.is_empty()
     {
@@ -549,6 +554,7 @@ pub(crate) async fn pip_sync(
         dry_run,
         printer,
         preview,
+        hook_provider,
     )
     .await
     {

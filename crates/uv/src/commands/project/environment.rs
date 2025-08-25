@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use tracing::debug;
+use uv_hooks::HookProvider;
 
 use crate::commands::pip::loggers::{InstallLogger, ResolveLogger};
 use crate::commands::pip::operations::Modifications;
@@ -106,7 +107,7 @@ impl From<CachedEnvironment> for PythonEnvironment {
 
 impl CachedEnvironment {
     /// Get or create an [`CachedEnvironment`] based on a given set of requirements.
-    pub(crate) async fn from_spec(
+    pub(crate) async fn from_spec<HP>(
         spec: EnvironmentSpecification<'_>,
         build_constraints: Constraints,
         interpreter: &Interpreter,
@@ -120,7 +121,11 @@ impl CachedEnvironment {
         cache: &Cache,
         printer: Printer,
         preview: Preview,
-    ) -> Result<Self, ProjectError> {
+        hook_provider: HP,
+    ) -> Result<Self, ProjectError>
+    where
+        HP: HookProvider,
+    {
         let interpreter = Self::base_interpreter(interpreter, cache)?;
 
         // Resolve the requirements with the interpreter.
@@ -206,6 +211,7 @@ impl CachedEnvironment {
             cache,
             printer,
             preview,
+            hook_provider,
         )
         .await?;
 

@@ -25,6 +25,7 @@ use uv_distribution::LoweredExtraBuildDependencies;
 use uv_distribution_types::Requirement;
 use uv_fs::which::is_executable;
 use uv_fs::{PythonExt, Simplified, create_symlink};
+use uv_hooks::HookProvider;
 use uv_installer::{SatisfiesResult, SitePackages};
 use uv_normalize::{DefaultExtras, DefaultGroups, PackageName};
 use uv_python::{
@@ -75,7 +76,7 @@ use crate::settings::{NetworkSettings, ResolverInstallerSettings, ResolverSettin
 
 /// Run a command.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn run(
+pub(crate) async fn run<HP>(
     project_dir: &Path,
     script: Option<Pep723Item>,
     command: Option<RunCommand>,
@@ -108,7 +109,11 @@ pub(crate) async fn run(
     no_env_file: bool,
     preview: Preview,
     max_recursion_depth: u32,
-) -> anyhow::Result<ExitStatus> {
+    hook_provider: HP,
+) -> anyhow::Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     // Check if max recursion depth was exceeded. This most commonly happens
     // for scripts with a shebang line like `#!/usr/bin/env -S uv run`, so try
     // to provide guidance for that case.
@@ -334,6 +339,7 @@ hint: If you are running a script with `{}` in the shebang, you may need to incl
                 DryRun::Disabled,
                 printer,
                 preview,
+                hook_provider.clone(),
             )
             .await
             {
@@ -442,6 +448,7 @@ hint: If you are running a script with `{}` in the shebang, you may need to incl
                     DryRun::Disabled,
                     printer,
                     preview,
+                    hook_provider.clone(),
                 )
                 .await
                 {
@@ -852,6 +859,7 @@ hint: If you are running a script with `{}` in the shebang, you may need to incl
                     DryRun::Disabled,
                     printer,
                     preview,
+                    hook_provider.clone(),
                 )
                 .await
                 {
@@ -1015,6 +1023,7 @@ hint: If you are running a script with `{}` in the shebang, you may need to incl
                 cache,
                 printer,
                 preview,
+                hook_provider,
             )
             .await;
 

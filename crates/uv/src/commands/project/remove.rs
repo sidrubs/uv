@@ -13,6 +13,7 @@ use uv_configuration::{
     Preview,
 };
 use uv_fs::Simplified;
+use uv_hooks::HookProvider;
 use uv_normalize::PackageName;
 use uv_normalize::{DEV_DEPENDENCIES, DefaultExtras, DefaultGroups};
 use uv_python::{PythonDownloads, PythonPreference, PythonRequest};
@@ -39,7 +40,7 @@ use crate::settings::{NetworkSettings, ResolverInstallerSettings};
 
 /// Remove one or more packages from the project requirements.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn remove(
+pub(crate) async fn remove<HP>(
     project_dir: &Path,
     locked: bool,
     frozen: bool,
@@ -61,7 +62,11 @@ pub(crate) async fn remove(
     cache: &Cache,
     printer: Printer,
     preview: Preview,
-) -> Result<ExitStatus> {
+    hook_provider: HP,
+) -> Result<ExitStatus>
+where
+    HP: HookProvider,
+{
     let target = if let Some(script) = script {
         // If we found a PEP 723 script and the user provided a project-only setting, warn.
         if package.is_some() {
@@ -369,6 +374,7 @@ pub(crate) async fn remove(
         DryRun::Disabled,
         printer,
         preview,
+        hook_provider,
     )
     .await
     {
