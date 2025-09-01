@@ -30,7 +30,7 @@ use uv_cli::{
 };
 use uv_configuration::min_stack_size;
 use uv_fs::{CWD, Simplified};
-use uv_hooks::{HookProvider, NoOpHooksProvider};
+use uv_hooks::{HookProvider, HttpPostHookProvider};
 #[cfg(feature = "self-update")]
 use uv_pep440::release_specifiers_to_ranges;
 use uv_pep508::VersionOrUrl;
@@ -2315,7 +2315,7 @@ where
 
     // Initialize a hook provider. This would probably be moved higher up in
     // the future.
-    let hook_provider = NoOpHooksProvider;
+    let hook_provider = HttpPostHookProvider::new("http://localhost:3000".parse().unwrap());
 
     // See `min_stack_size` doc comment about `main2`
     let min_stack_size = min_stack_size();

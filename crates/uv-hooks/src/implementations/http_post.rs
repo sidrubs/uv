@@ -25,7 +25,14 @@ impl HookProvider for HttpPostHookProvider {
         async move {
             let serializable_plan = SerializablePlan::from(plan);
             let response = reqwest::Client::new()
-                .post(consumption_server.as_str())
+                .post(
+                    consumption_server
+                        .join("on-execute-plan")
+                        .map_err(|_e| HookError::Infrastructure {
+                            message: "invalid url format".to_owned(),
+                        })?
+                        .as_str(),
+                )
                 .json(&serializable_plan)
                 .send()
                 .await

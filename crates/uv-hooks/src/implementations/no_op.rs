@@ -2,6 +2,6 @@ use crate::HookProvider;
 
 /// A hook provider that does not perform actions on any hooks.
 #[derive(Debug, Clone)]
-pub struct NoOpHooksProvider;
+pub struct NoOpHookProvider;
 
-impl HookProvider for NoOpHooksProvider {}
+impl HookProvider for NoOpHookProvider {}
