@@ -13,5 +13,11 @@ license.workspace = true
 thiserror = { workspace = true }
 uv-installer = { workspace = true }
 
+# For `HttpPostHookProvider` implementation.
+reqwest = { workspace = true }
+serde = { workspace = true }
+url = { workspace = true }
+uv-distribution-types = { workspace = true }
+
 [lints]
 workspace = true

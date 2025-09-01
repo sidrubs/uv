@@ -16,6 +16,11 @@ pub trait HookProvider: Send + Sync + Clone + 'static {
 #[derive(Debug, Error)]
 pub enum HookError {
     /// The current action is not allowed and the process should be aborted.
-    #[error("this action is not allowed")]
-    ActionDenied,
+    #[error("this action is not allowed: {message}")]
+    ActionDenied { message: String },
+
+    /// There was an error with some of the Hook Provider's infrastructure (e.g.
+    /// could not complete a request to a remote server).
+    #[error("an error occurred with the hook provider infrastructure: {message}")]
+    Infrastructure { message: String },
 }

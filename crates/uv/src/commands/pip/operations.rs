@@ -487,7 +487,10 @@ where
         .on_execute_plan(&plan)
         .await
         .map_err(|e| match e {
-            HookError::ActionDenied => anyhow!("the installation plan has been denied"),
+            HookError::ActionDenied { message } => {
+                anyhow!(format!("the installation plan has been denied: {message}"))
+            }
+            _ => anyhow!(e.to_string()),
         })?;
 
     let Plan {
